@@ -1,0 +1,34 @@
+name: qwen-tg-bot
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Пытаемся стартовать каждые 5 часов. Благодаря concurrency-группе
+    # вторая копия не запускается, пока жива первая: новый запуск ждёт
+    # в очереди и подхватывает бота сразу после остановки предыдущего.
+    - cron: "0 */5 * * *"
+
+concurrency:
+  group: qwen-tg-bot
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: python -m tgbot
